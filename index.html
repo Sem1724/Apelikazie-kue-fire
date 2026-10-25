@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Catatan Titipan Kue</title>
 
-  <!-- ===== LIBRARY PEMBUAT PDF ===== -->
+  <!-- ===== LIBRARY PEMBUAT PDF (butuh internet, hanya dipakai tombol Unduh PDF) ===== -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-  <!-- ===== CSS GLOBAL ===== -->
+  <!-- ===== CSS GLOBAL (hanya warna, font, dan reset dasar) ===== -->
   <style>
     :root { --utama:#0f766e; --latar:#f3f5f4; --kartu:#ffffff; --teks:#1f2937; --garis:#d5dbd9; --merah:#b91c1c; --hijau:#15803d; }
     * { box-sizing: border-box; }
@@ -22,35 +22,45 @@
 </head>
 <body>
 
-  <!-- ===== HEADER ===== -->
+  <!-- ===== HEADER: judul + pemilih tanggal ===== -->
   <style>
     .header { background: var(--utama); color:#fff; padding:12px 16px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
     .header h1 { font-size:18px; margin:0; }
     .header input { padding:6px 8px; border:0; border-radius:6px; }
   </style>
   <header class="header">
+    <!-- Judul aplikasi -->
     <h1>Catatan Titipan Kue</h1>
+    <!-- Pemilih tanggal (dipakai oleh halaman Input dan Laporan) -->
     <label>Tanggal: <input type="date" id="tanggal"></label>
+    <!-- Status penyimpanan Firebase (diisi JavaScript) -->
     <small id="status-sheet" style="width:100%"></small>
   </header>
 
-  <!-- ===== MENU TAB ===== -->
+  <!-- ===== MENU TAB: pindah antar halaman ===== -->
   <style>
     .menu { display:flex; overflow-x:auto; background:#fff; border-bottom:1px solid var(--garis); }
     .menu button { flex:1; white-space:nowrap; padding:11px 12px; border:0; background:none; border-bottom:3px solid transparent; color: var(--teks); }
     .menu button.aktif { border-bottom-color: var(--utama); color: var(--utama); font-weight:700; }
   </style>
   <nav class="menu" id="menu">
+    <!-- TAB: Input Harian -->
     <button data-hal="input" class="aktif">Input Harian</button>
+    <!-- TAB: Laporan -->
     <button data-hal="laporan">Laporan</button>
+    <!-- TAB: Keuntungan -->
     <button data-hal="untung">Keuntungan</button>
+    <!-- TAB: Gantungan (saldo kurang / lebih yang belum selesai) -->
     <button data-hal="gantungan">Gantungan</button>
+    <!-- TAB: Rekap Periode (penitip yang dibayar per periode) -->
     <button data-hal="rekap">Rekap</button>
+    <!-- TAB: Data Master -->
     <button data-hal="master">Data Master</button>
+    <!-- TAB: Cadangan -->
     <button data-hal="cadangan">Cadangan</button>
   </nav>
 
-  <!-- ===== STYLE UMUM ===== -->
+  <!-- ===== STYLE UMUM SEMUA HALAMAN (lebar dan jarak) ===== -->
   <style>
     .halaman { max-width:760px; margin:0 auto; padding:12px; }
     .halaman[hidden] { display:none; }
@@ -64,47 +74,66 @@
   <!-- HALAMAN 1: INPUT HARIAN                               -->
   <!-- ===================================================== -->
   <section id="hal-input" class="halaman">
+
+    <!-- BAR RINGKAS HARI INI: jumlah penitip hadir dan total uang -->
     <style>
       .ringkas-hari { background:#e6f2f0; border:1px solid var(--utama); border-radius:10px; padding:10px 12px; margin-bottom:10px; display:flex; justify-content:space-between; font-weight:700; }
     </style>
     <div class="ringkas-hari">
+      <!-- Teks: Hadir n penitip (diisi JavaScript) -->
       <span id="ringkas-hadir"></span>
+      <!-- Teks: Total uang semua penitip (diisi JavaScript) -->
       <span id="ringkas-total"></span>
     </div>
 
+    <!-- DAFTAR KARTU PENITIP (kartu dibuat oleh JavaScript, CSS-nya ada tepat di bawah) -->
     <style>
+      /* Kartu satu penitip */
       .kartu { background: var(--kartu); border:1px solid var(--garis); border-radius:10px; margin-bottom:10px; overflow:hidden; }
+      /* Kepala kartu: centang hadir + nama penitip */
       .kartu-kepala { display:flex; gap:10px; align-items:center; padding:11px 12px; font-weight:700; cursor:pointer; }
       .kartu-kepala input { width:22px; height:22px; }
+      /* Isi kartu: tabel kue. Warna, rata, tebal, ukuran huruf, dan garis diambil dari pengaturan PDF (dibuat JavaScript) */
       .kartu-isi { padding:0 0 8px; overflow-x:auto; }
       .tabel-kue td input { width:100%; min-width:44px; max-width:110px; padding:5px; font:inherit; color:inherit; text-align:inherit; background:transparent; border:1px solid rgba(0,0,0,.3); border-radius:6px; }
     </style>
     <div id="daftar-input"></div>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- HALAMAN 2: LAPORAN                                    -->
+  <!-- HALAMAN 2: LAPORAN (ringkasan untuk grup WhatsApp)    -->
   <!-- ===================================================== -->
   <section id="hal-laporan" class="halaman" hidden>
+
+    <!-- PERINGATAN: muncul jika ada kue yang sisanya belum diisi -->
     <style>
       .peringatan { background:#fef3c7; border:1px solid #d97706; border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:14px; }
       .peringatan:empty { display:none; }
     </style>
     <div class="peringatan" id="peringatan"></div>
 
+    <!-- KOTAK TEKS LAPORAN: isi pesan yang akan dikirim ke grup -->
     <style>
       .teks-laporan { width:100%; height:360px; padding:10px; border:1px solid var(--garis); border-radius:8px; font-family: ui-monospace, Consolas, monospace; font-size:13px; }
     </style>
     <textarea class="teks-laporan" id="teks-laporan" readonly></textarea>
 
+    <!-- TOMBOL: Salin Laporan -->
     <button class="tombol" id="btn-salin">Salin Laporan</button>
+    <!-- TOMBOL: Bagikan ke WhatsApp -->
     <button class="tombol" id="btn-wa">Bagikan ke WhatsApp</button>
+    <!-- TOMBOL: Unduh PDF (satu file berisi semua penitip hari itu, tanpa harga jual dan untung) -->
     <button class="tombol" id="btn-pdf">Unduh PDF</button>
+    <!-- Info hasil salin -->
     <span id="info-salin"></span>
 
+    <!-- ===== PENGATURAN LAPORAN HARIAN (PDF, teks WhatsApp, dan tampilan Input Harian) ===== -->
     <h3 style="margin-top:22px">Pengaturan laporan harian</h3>
-    <p>Ubah tulisan, warna, rata, dan ketebalan laporan harian di sini. Perubahan tersimpan otomatis.</p>
+    <!-- PETUNJUK -->
+    <p>Ubah tulisan, warna, rata, dan ketebalan laporan harian di sini. Perubahan tersimpan otomatis, ikut tersimpan secara online, dan dipakai oleh PDF, teks WhatsApp, <b>dan tampilan tabel di tab Input Harian</b>. Rekap punya pengaturan sendiri di tab Rekap.</p>
 
+    <!-- FORM PENGATURAN (dibuat JavaScript, CSS-nya di bawah ini) -->
     <style>
       .grup-set { background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
       .grup-set label { display:grid; grid-template-columns: 1fr 1fr; gap:6px; align-items:center; margin:6px 0; font-size:14px; }
@@ -115,24 +144,34 @@
     </style>
     <div id="form-pengaturan"></div>
 
+    <!-- TOMBOL: Pratinjau PDF (memakai tanggal yang dipilih di bagian atas) -->
     <button class="tombol" id="btn-pratinjau">Pratinjau PDF</button>
+    <!-- TOMBOL: Kembalikan ke Awal (tekan dua kali) -->
     <button class="tombol abu" id="btn-reset-pengaturan">Kembalikan ke Awal</button>
+    <!-- Tautan hasil pratinjau (muncul setelah Pratinjau PDF ditekan) -->
     <p><a id="link-pratinjau" href="#" target="_blank" hidden></a></p>
+    <!-- Info hasil aksi -->
     <p id="info-pengaturan"></p>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- HALAMAN 3: KEUNTUNGAN                                 -->
+  <!-- HALAMAN 3: KEUNTUNGAN (hanya untuk Anda)              -->
   <!-- ===================================================== -->
   <section id="hal-untung" class="halaman" hidden>
+
+    <!-- PILIH RENTANG TANGGAL REKAP -->
     <style>
       .rentang { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
     </style>
     <div class="rentang">
+      <!-- Kolom: Dari tanggal -->
       <label>Dari <input type="date" id="dari" class="kolom"></label>
+      <!-- Kolom: Sampai tanggal -->
       <label>Sampai <input type="date" id="sampai" class="kolom"></label>
     </div>
 
+    <!-- HASIL REKAP: kartu total + tabel (dibuat JavaScript, CSS di bawah) -->
     <style>
       .total-untung { display:flex; gap:10px; margin-bottom:10px; }
       .total-untung div { flex:1; background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px; }
@@ -143,13 +182,18 @@
       .tabel-lap th:first-child, .tabel-lap td:first-child { text-align:left; }
     </style>
     <div class="hasil-untung" id="hasil-untung"></div>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- HALAMAN 4: DATA MASTER                                -->
+  <!-- HALAMAN 4: DATA MASTER (penitip, kue, harga)          -->
   <!-- ===================================================== -->
   <section id="hal-master" class="halaman" hidden>
-    <p>Harga setor dipakai di laporan. Harga jual hanya untuk menghitung keuntungan Anda.</p>
+
+    <!-- PETUNJUK -->
+    <p>Harga setor dipakai di laporan. Harga jual hanya untuk menghitung keuntungan Anda (kosongkan jika belum tahu).</p>
+
+    <!-- DAFTAR BLOK PENITIP (dibuat JavaScript, CSS di bawah) -->
     <style>
       .blok-penitip { background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px; margin-bottom:10px; }
       .blok-nama { display:flex; gap:6px; margin-bottom:8px; }
@@ -158,21 +202,28 @@
       .baris-master input { min-width:0; }
     </style>
     <div id="daftar-master"></div>
+
+    <!-- TOMBOL: Tambah Penitip -->
     <button class="tombol" id="btn-tambah-penitip">+ Tambah Penitip</button>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- HALAMAN 5: CADANGAN                                   -->
+  <!-- HALAMAN 5: CADANGAN (ekspor, impor, hapus semua)      -->
   <!-- ===================================================== -->
   <section id="hal-cadangan" class="halaman" hidden>
-    <p>Data tersimpan otomatis online dan lokal.</p>
+
+    <!-- PETUNJUK -->
+    <p>Data tersimpan di perangkat ini dan otomatis tersinkronisasi ke Firebase. Unduh cadangan secara berkala sebagai arsip tambahan.</p>
+
+    <!-- ===== CADANGAN PER BAGIAN ===== -->
     <style>
       .kotak-cad { background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
       .kotak-cad small { display:block; color:#4b5563; margin:2px 0 8px; }
     </style>
     <div class="kotak-cad">
       <b>Catatan Harian</b>
-      <small>Nitip, sisa, dan uang fisik.</small>
+      <small>Nitip, sisa, dan uang fisik semua tanggal.</small>
       <button class="tombol" data-cad="harian" data-aksi="unduh">Unduh</button>
       <button class="tombol abu" data-cad="harian" data-aksi="pulih">Pulihkan</button>
     </div>
@@ -184,19 +235,20 @@
     </div>
     <div class="kotak-cad">
       <b>Data Master</b>
-      <small>Daftar penitip dan kue.</small>
+      <small>Daftar penitip, kue, harga setor, dan harga jual.</small>
       <button class="tombol" data-cad="master" data-aksi="unduh">Unduh</button>
       <button class="tombol abu" data-cad="master" data-aksi="pulih">Pulihkan</button>
     </div>
     <div class="kotak-cad">
       <b>Semuanya</b>
-      <small>Semua data sekaligus.</small>
+      <small>Catatan harian, pengaturan laporan, dan Data Master sekaligus.</small>
       <button class="tombol" data-cad="semua" data-aksi="unduh">Unduh</button>
       <button class="tombol abu" data-cad="semua" data-aksi="pulih">Pulihkan</button>
     </div>
     <input type="file" id="file-impor" accept=".json" hidden>
-    <button class="tombol merah" id="btn-batal-pulih" hidden>Batalkan Pemulihan</button>
+    <button class="tombol merah" id="btn-batal-pulih" hidden>Batalkan Pemulihan Terakhir</button>
 
+    <!-- ===== HAPUS CATATAN HARIAN ===== -->
     <style>
       .kotak-hapus { background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px 12px; margin:14px 0; }
       .kotak-hapus label { display:block; margin:8px 0; }
@@ -204,20 +256,26 @@
     </style>
     <div class="kotak-hapus">
       <b>Hapus Catatan Harian</b>
+      <small>Menghapus nitip, sisa, dan uang fisik. Data Master tidak ikut terhapus.</small>
       <small id="daftar-tgl-hapus" style="margin-top:6px"></small>
       <label>Pilih tanggal <input type="date" id="tgl-hapus" class="kolom"></label>
       <button class="tombol merah" id="btn-hapus-tgl">Hapus Tanggal Ini</button>
       <button class="tombol merah" id="btn-hapus-semua">Hapus Semua Tanggal</button>
     </div>
+
+    <!-- Info hasil aksi -->
     <p id="info-cadangan"></p>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- HALAMAN: GANTUNGAN                                    -->
+  <!-- HALAMAN: GANTUNGAN (saldo kurang / lebih belum selesai) -->
   <!-- ===================================================== -->
   <section id="hal-gantungan" class="halaman" hidden>
-    <p>Daftar penitip yang saldonya masih kurang atau lebih.</p>
-    <label>Tandai merah jika lebih dari <input type="number" id="batas-hari" class="kolom" value="7" min="1" style="width:70px"> hari tidak nitip</label>
+
+    <p>Daftar penitip yang saldonya masih kurang atau lebih (belum Pas).</p>
+    <label>Tandai merah jika sudah lebih dari <input type="number" id="batas-hari" class="kolom" value="7" min="1" style="width:70px"> hari tidak nitip</label>
+
     <style>
       .kartu-gantung { background:#fff; border:1px solid var(--garis); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
       .kartu-gantung .judul { display:flex; justify-content:space-between; font-weight:700; }
@@ -226,14 +284,17 @@
       #hasil-gantungan { margin-top:10px; }
     </style>
     <div id="hasil-gantungan"></div>
+
   </section>
 
   <!-- ===================================================== -->
   <!-- HALAMAN: REKAP PERIODE                                -->
   <!-- ===================================================== -->
   <section id="hal-rekap" class="halaman" hidden>
-    <p>Untuk penitip yang dibayar per periode.</p>
+
+    <p>Untuk penitip yang uangnya dikumpulkan di kotak dan diambil sewaktu-waktu.</p>
     <label>Penitip <select id="rekap-penitip" class="kolom"></select></label>
+
     <style>
       #hasil-rekap { margin-top:10px; }
       #hasil-rekap h3 { margin:12px 0 6px; font-size:15px; }
@@ -243,39 +304,44 @@
       .rekap-form input { width:100%; margin-top:3px; }
     </style>
     <div id="hasil-rekap"></div>
+
     <p><a id="link-pratinjau-rekap" href="#" target="_blank" hidden></a></p>
     <p id="info-rekap"></p>
+
     <h3 style="margin-top:22px">Pengaturan tampilan PDF Rekap</h3>
     <div id="form-pengaturan-rekap"></div>
     <button class="tombol abu" id="btn-reset-rekap">Kembalikan ke Awal</button>
+
   </section>
 
   <!-- ===================================================== -->
-  <!-- JAVASCRIPT & FIREBASE SDK                             -->
+  <!-- JAVASCRIPT & KONEKSI FIREBASE (FIRESTORE)             -->
   <!-- ===================================================== -->
   <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    // Import Firebase SDK (menggunakan versi 13.1.0 sesuai permintaan Anda)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-analytics.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyAPJS07WkHxy7Y2tLkZB6SjpgFRMCc-sDA",
-    authDomain: "my-kue-app.firebaseapp.com",
-    projectId: "my-kue-app",
-    storageBucket: "my-kue-app.firebasestorage.app",
-    messagingSenderId: "642923419998",
-    appId: "1:642923419998:web:7d242e0d4f7767ce3697cf",
-    measurementId: "G-P6119E6DLH"
-  };
+    // Konfigurasi Firebase Anda
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPJS07WkHxy7Y2tLkZB6SjpgFRMCc-sDA",
+      authDomain: "my-kue-app.firebaseapp.com",
+      projectId: "my-kue-app",
+      storageBucket: "my-kue-app.firebasestorage.app",
+      messagingSenderId: "642923419998",
+      appId: "1:642923419998:web:7d242e0d4f7767ce3697cf",
+      measurementId: "G-P6119E6DLH"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+    // Inisialisasi Firebase, Analytics, dan Firestore
+    const app = initializeApp(firebaseConfig);
+    let analytics = null;
+    try { analytics = getAnalytics(app); } catch(e) {}
+    let dbFirestore = null;
+    try { dbFirestore = getFirestore(app); } catch(e) {}
 
+    // ===== DATA AWAL: 19 penitip dan kuenya =====
     const DATA_AWAL = [
       ['Griya', [['Kue - kue',1000]]],
       ['Cilok', [['Cilok Tusuk',800],['Cilok Bungkus',4000]]],
@@ -333,7 +399,7 @@
       simpanKeFirebase();
     }
 
-    // SINKRONISASI KE FIREBASE
+    // ===== SINKRONISASI KE FIREBASE FIRESTORE =====
     async function muatDariFirebase() {
       if (!dbFirestore) {
         $('status-sheet').textContent = 'Firebase: offline / mode lokal';
@@ -1169,7 +1235,7 @@
         dua(t, () => {
           const daftar = ((db.periode || {})[p.id] || []).slice();
           daftar.pop(); db.periode[p.id] = daftar;
-          simpan(); rekapLihat = null; renderRekap();
+          simpan(); rekapLihat = null; renderRekapp();
           info('Penutupan dibatalkan.');
         });
       }
@@ -1193,7 +1259,7 @@
     $('menu').addEventListener('click', ev => { if (ev.target.dataset.hal) tampilkanHalaman(ev.target.dataset.hal); });
     $('tanggal').addEventListener('change', ev => { tglAktif = ev.target.value || hariIni(); tampilkanSemua(); });
 
-    // MULAI
+    // ===== MULAI APLIKASI =====
     muat();
     $('tanggal').value = tglAktif;
     $('dari').value = tglAktif.slice(0, 8) + '01';
@@ -1201,6 +1267,7 @@
     tampilkanHalaman('input');
     $('tgl-hapus').value = tglAktif;
     
+    // Muat data dari Firebase Firestore saat pertama kali dibuka
     muatDariFirebase();
   </script>
 </body>
